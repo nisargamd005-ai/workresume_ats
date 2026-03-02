@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Technical Assessment - WorkResume ATS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .test-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        background: white;
+        padding: 1.5rem 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 100px;
+        z-index: 500;
+    }
+
+    .timer {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .question-card {
+        margin-bottom: 2rem;
+        padding: 2rem;
+    }
+
+    .options-list {
+        list-style: none;
+        margin-top: 1.5rem;
+    }
+
+    .option {
+        margin-bottom: 1rem;
+    }
+
+    .option-label {
+        display: block;
+        padding: 1rem 1.5rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+    }
+
+    input[type="radio"]:checked+.option-label {
+        border-color: var(--primary);
+        background: rgba(99, 102, 241, 0.05);
+        color: var(--primary);
+    }
+
+    input[type="radio"] {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-header">
+    <div>
+        <h3>Technical Assessment</h3>
+        <p style="color: var(--gray);">Role: {{ application.job.title }}</p>
+    </div>
+    <div class="timer">
+        <span>⏱️</span>
+        <span id="countdown">10:00</span>
+    </div>
+</div>
+
+<form method="POST" id="testForm">
+    {% csrf_token %}
+    {% for q in questions %}
+    <div class="card question-card">
+        <h3>Question {{ forloop.counter }}</h3>
+        <p style="font-size: 1.2rem; margin-bottom: 1.5rem;">{{ q.text }}</p>
+
+        <div class="options-list">
+            {% for option in q.get_options %}
+            <div class="option">
+                <input type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ option|slice:"
+                    :1" }}" required>
+                <label for="q{{ q.id }}_{{ forloop.counter }}" class="option-label">
+                    {{ option }}
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div style="text-align: center; margin-top: 2rem; margin-bottom: 4rem;">
+        <button type="submit" class="btn btn-primary" style="padding: 1.2rem 4rem; font-size: 1.2rem;">Submit My
+            Answers</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let timeLeft = {{ time_limit }} * 60;
+    const countdownEl = document.getElementById('countdown');
+
+    const timer = setInterval(() => {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+
+        countdownEl.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            alert("Time's up! Your answers will be submitted automatically.");
+            document.getElementById('testForm').submit();
+        }
+    }, 1000);
+</script>
+{% endblock %}

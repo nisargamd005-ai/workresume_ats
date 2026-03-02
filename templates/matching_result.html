@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Matching Result - WorkResume ATS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-container {
+        max-width: 800px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .score-circle {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        margin: 2rem auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: white;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        border: 8px solid #f1f5f9;
+        position: relative;
+    }
+
+    .score-value {
+        font-size: 3.5rem;
+        font-weight: 700;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .score-label {
+        font-size: 1rem;
+        color: var(--gray);
+        font-weight: 600;
+    }
+
+    .reasoning-box {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 2rem;
+        margin: 2rem 0;
+        text-align: left;
+        border-left: 4px solid var(--primary);
+    }
+
+    .status-banner {
+        padding: 1rem;
+        border-radius: 0.75rem;
+        margin-bottom: 2rem;
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+
+    .status-eligible {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .status-ineligible {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-container">
+    <div class="card">
+        {% if eligible %}
+        <div class="status-banner status-eligible">🎉 You are Eligible!</div>
+        <h1>Perfect! Let's move to the next step.</h1>
+        <p>Our AI analysis shows a strong match between your profile and the <strong>{{ application.job.title
+                }}</strong> role.</p>
+        {% else %}
+        <div class="status-banner status-ineligible">Unfortunately, you are not eligible for this role.</div>
+        <h1>Match Score: {{ match_score }}%</h1>
+        <p>The minimum required match for this role is {{ application.job.min_match_score }}%.</p>
+        {% endif %}
+
+        <div class="score-circle">
+            <span class="score-value">{{ match_score|floatformat:0 }}%</span>
+            <span class="score-label">Match Score</span>
+        </div>
+
+        <div class="reasoning-box">
+            <h3>AI Feedback:</h3>
+            <p>{{ reasoning }}</p>
+        </div>
+
+        {% if eligible %}
+        <p style="margin-bottom: 2rem;">As a next step, you need to complete a technical assessment specifically
+            generated based on your skills and projects.</p>
+        <div
+            style="background: #fef9c3; padding: 1rem; border-radius: 0.5rem; margin-bottom: 2rem; border: 1px solid #fde047;">
+            <strong>⚠️ Note:</strong> The test has a 10-minute time limit once started.
+        </div>
+        <a href="{% url 'take_test' application.id %}" class="btn btn-primary"
+            style="font-size: 1.2rem; padding: 1rem 3rem;">Start Assessment</a>
+        {% else %}
+        <p>Don't worry! You can apply for other roles that better match your skillset.</p>
+        <a href="/" class="btn btn-primary" style="margin-top: 1rem;">Back to Jobs</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

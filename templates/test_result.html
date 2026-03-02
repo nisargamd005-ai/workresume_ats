@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Assessment Result - WorkResume ATS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-card {
+        max-width: 600px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .status-icon {
+        font-size: 5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .score-display {
+        font-size: 4rem;
+        font-weight: 800;
+        margin: 1.5rem 0;
+    }
+
+    .pass-text {
+        color: #16a34a;
+    }
+
+    .fail-text {
+        color: #dc2626;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-card">
+    <div class="card">
+        {% if application.status == 'PASSED' %}
+        <div class="status-icon">🚀</div>
+        <h1 class="pass-text">Congratulations!</h1>
+        <p>You have successfully passed the technical assessment for the <strong>{{ application.job.title }}</strong>
+            position.</p>
+        <div class="score-display pass-text">{{ application.test_score|floatformat:1 }}%</div>
+        <p
+            style="background: #f0fdf4; padding: 1.5rem; border-radius: 1rem; border: 1px solid #bbf7d0; color: #166534;">
+            Your resume and test results have been forwarded to the hiring team. They will contact you shortly if your
+            profile matches their requirements.
+        </p>
+        {% else %}
+        <div class="status-icon">💡</div>
+        <h1 class="fail-text">Keep Learning!</h1>
+        <p>You didn't reach the passing threshold ({{ application.job.test_threshold }}%) for this role.</p>
+        <div class="score-display fail-text">{{ application.test_score|floatformat:1 }}%</div>
+        <p style="color: var(--gray); margin-bottom: 2rem;">Don't be discouraged! This was a challenging assessment
+            based on high-level skills. Continue building your portfolio and try applying for other positions.</p>
+        {% endif %}
+
+        <div style="margin-top: 2.5rem;">
+            <a href="/" class="btn btn-primary">Back to Homepage</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

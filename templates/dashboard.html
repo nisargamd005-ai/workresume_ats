@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Employer Dashboard - WorkResume ATS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .stat-card {
+        padding: 1.5rem;
+    }
+
+    .stat-val {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--gray);
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    th {
+        text-align: left;
+        padding: 1rem;
+        background: #f8fafc;
+        color: var(--gray);
+        font-weight: 600;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    tr:hover {
+        background: #f8fafc;
+    }
+
+    .avatar {
+        width: 40px;
+        height: 40px;
+        background: var(--gradient);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-weight: 700;
+        margin-right: 1rem;
+    }
+
+    .candidate-info {
+        display: flex;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Employer Control Center</h1>
+    <a href="/admin/core/job/add/" class="btn btn-primary">+ Post New Job</a>
+</div>
+
+<div class="stats-grid">
+    <div class="card stat-card">
+        <div class="stat-label">Total Applications</div>
+        <div class="stat-val">{{ all_applications.count }}</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-label">Qualified Candidates</div>
+        <div class="stat-val">{{ passed_applications.count }}</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-label">Selection Rate</div>
+        <div class="stat-val">{{ selection_rate|floatformat:1 }}%</div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Recent Qualified Applications</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Candidate</th>
+                    <th>Applied For</th>
+                    <th>Language</th>
+                    <th>Match Score</th>
+                    <th>Test Score</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in passed_applications %}
+                <tr>
+                    <td>
+                        <div class="candidate-info">
+                            <div class="avatar">{{ app.candidate.name|slice:":1" }}</div>
+                            <div>
+                                <div style="font-weight: 600;">{{ app.candidate.name }}</div>
+                                <div style="font-size: 0.8rem; color: var(--gray);">{{ app.candidate.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ app.job.title }}</td>
+                    <td><span class="badge" style="background:#e0e7ff; color:#4338ca;">{{ app.candidate.language|upper
+                            }}</span></td>
+                    <td><span class="badge badge-success">{{ app.match_score|floatformat:0 }}%</span></td>
+                    <td><span class="badge badge-success">{{ app.test_score|floatformat:1 }}%</span></td>
+                    <td><a href="{{ app.candidate.resume.url }}" class="btn btn-primary"
+                            style="padding: 0.4rem 1rem; font-size: 0.8rem;">View Resume</a></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 3rem; color: var(--gray);">No qualified
+                        candidates found yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 3rem;">
+    <h3>All Activity Log</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Candidate</th>
+                    <th>Job</th>
+                    <th>Result Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in all_applications %}
+                <tr>
+                    <td>{{ app.candidate.name }}</td>
+                    <td>{{ app.job.title }}</td>
+                    <td>
+                        {% if app.status == 'PASSED' %}
+                        <span class="badge badge-success">PASSED</span>
+                        {% elif app.status == 'FAILED' %}
+                        <span class="badge badge-danger">FAILED TEST</span>
+                        {% elif app.status == 'REJECTED' %}
+                        <span class="badge badge-danger">REJECTED (MATCH)</span>
+                        {% else %}
+                        <span class="badge badge-warning">{{ app.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ app.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

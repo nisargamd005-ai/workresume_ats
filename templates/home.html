@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Explore Jobs - WorkResume ATS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .hero h1 {
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .hero p {
+        font-size: 1.25rem;
+        color: var(--gray);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .job-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .job-card {
+        background: white;
+        border-radius: 1.25rem;
+        padding: 2rem;
+        transition: all 0.3s;
+        border: 1px solid #e2e8f0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .job-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: var(--primary);
+    }
+
+    .job-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--gradient);
+    }
+
+    .job-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .job-card p {
+        color: var(--gray);
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .skills-tag {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .skill-badge {
+        background: #f1f5f9;
+        color: var(--primary);
+        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Find Your Next Opportunity</h1>
+    <p>Our AI-powered screening process ensures the best match for your unique skills and career goals.</p>
+</div>
+
+<div class="job-grid">
+    {% for job in jobs %}
+    <div class="job-card">
+        <h3>{{ job.title }}</h3>
+        <p>{{ job.description }}</p>
+        <div class="skills-tag">
+            {% for skill in job.get_skills_list %}
+            <span class="skill-badge">{{ skill }}</span>
+            {% endfor %}
+        </div>
+        <a href="{% url 'apply_job' job.id %}" class="btn btn-primary" style="width: 100%; text-align: center;">Apply
+            Now</a>
+    </div>
+    {% empty %}
+    <div class="card" style="grid-column: 1 / -1; text-align: center;">
+        <p>No jobs available at the moment. Please check back later.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
