@@ -85,8 +85,8 @@
         <div class="options-list">
             {% for option in q.get_options %}
             <div class="option">
-                <input type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ option|slice:"
-                    :1" }}" required>
+                <input type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}"
+                    value="{{ option|slice:':1' }}" required>
                 <label for="q{{ q.id }}_{{ forloop.counter }}" class="option-label">
                     {{ option }}
                 </label>

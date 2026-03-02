@@ -15,10 +15,13 @@ def apply_job(request, job_id):
         email = request.POST.get('email')
         resume_file = request.FILES.get('resume')
 
-        # 1. Save Candidate and Resume
-        candidate, created = Candidate.objects.get_or_create(email=email, defaults={'name': name})
-        candidate.resume = resume_file
-        candidate.save()
+        # 1. Create a NEW Candidate for every application to handle different resumes
+        # No more get_or_create!
+        candidate = Candidate.objects.create(
+            name=name,
+            email=email,
+            resume=resume_file
+        )
 
         # 2. Extract Text and Parse with AI
         resume_text = extract_text_from_file(candidate.resume.path)

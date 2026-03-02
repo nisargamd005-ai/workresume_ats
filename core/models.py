@@ -18,7 +18,7 @@ class Job(models.Model):
 
 class Candidate(models.Model):
     name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
     resume = models.FileField(upload_to='resumes/')
     language = models.CharField(max_length=50, default='en')
     parsed_skills = models.TextField(blank=True)
@@ -67,7 +67,13 @@ class Question(models.Model):
 
     def set_options(self, options_list):
         self.options_json = json.dumps(options_list)
+        self.save()
 
     def get_options(self):
-        return json.loads(self.options_json)
+        if not self.options_json:
+            return []
+        try:
+            return json.loads(self.options_json)
+        except:
+            return []
 
