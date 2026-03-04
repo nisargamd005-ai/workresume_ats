@@ -4,14 +4,30 @@
 
 {% block extra_css %}
 <style>
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .hero {
         text-align: center;
         margin-bottom: 4rem;
+        animation: slideUp 0.8s ease-out;
     }
 
     .hero h1 {
         font-size: 3.5rem;
         margin-bottom: 1rem;
+        background: linear-gradient(90deg, #db2777, #9333ea);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .hero p {
@@ -31,16 +47,29 @@
         background: white;
         border-radius: 1.25rem;
         padding: 2rem;
-        transition: all 0.3s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         border: 1px solid #e2e8f0;
         position: relative;
         overflow: hidden;
+        animation: slideUp 0.8s ease-out backwards;
+    }
+
+    .job-card:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+
+    .job-card:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .job-card:nth-child(3) {
+        animation-delay: 0.3s;
     }
 
     .job-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        border-color: var(--primary);
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 25px -5px rgba(236, 72, 153, 0.25);
+        border-color: #ec4899;
     }
 
     .job-card::before {
@@ -50,7 +79,7 @@
         left: 0;
         width: 4px;
         height: 100%;
-        background: var(--gradient);
+        background: linear-gradient(to bottom, #fbc2eb, #a855f7);
     }
 
     .job-card h3 {
@@ -76,12 +105,31 @@
     }
 
     .skill-badge {
-        background: #f1f5f9;
-        color: var(--primary);
+        background: #fdf4ff;
+        color: #d946ef;
         font-size: 0.75rem;
-        padding: 0.2rem 0.6rem;
-        border-radius: 0.5rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: 1rem;
         font-weight: 600;
+        border: 1px solid #f5d0fe;
+    }
+
+    .btn-primary {
+        background: linear-gradient(90deg, #ec4899, #a855f7);
+        color: white;
+        text-decoration: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 2rem;
+        font-weight: bold;
+        display: inline-block;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.3);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.5);
+        color: white;
     }
 </style>
 {% endblock %}

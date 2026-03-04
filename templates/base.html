@@ -21,11 +21,20 @@
 
             /* 🌸 Pink + Lavender Background */
             background: linear-gradient(
-                135deg,
+                -45deg,
                 #fbc2eb,   /* soft pink */
+                #ff9a9e,
                 #e6c8ff,   /* lavender */
                 #d8b4fe    /* light purple */
             );
+            background-size: 400% 400%;
+            animation: gradientBG 12s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         /* Navbar */
@@ -60,6 +69,7 @@
 
         .nav-links a:hover {
             color: #ec4899;
+            text-shadow: 0 0 8px rgba(236, 72, 153, 0.4);
         }
 
         /* Main Content */
