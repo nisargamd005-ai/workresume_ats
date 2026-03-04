@@ -61,11 +61,13 @@ class Application(models.Model):
 class Question(models.Model):
     application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField()
-    options_json = models.TextField() # Manual JSON storage for simplicity if jsonfield not ready
-    correct_answer = models.CharField(max_length=1) # A, B, C, or D
-    candidate_answer = models.CharField(max_length=1, blank=True, null=True)
+    options_json = models.TextField(blank=True, default='[]') 
+    correct_answer = models.CharField(max_length=50) # Increased for robustness
+    candidate_answer = models.CharField(max_length=50, blank=True, null=True)
 
     def set_options(self, options_list):
+        if not options_list:
+            options_list = []
         self.options_json = json.dumps(options_list)
         self.save()
 
@@ -73,7 +75,11 @@ class Question(models.Model):
         if not self.options_json:
             return []
         try:
-            return json.loads(self.options_json)
+            data = json.loads(self.options_json)
+            if isinstance(data, dict):
+                # Robustly handle {"A": "Choice A", ...}
+                return [f"{k}) {v}" for k, v in data.items()]
+            return data if isinstance(data, list) else []
         except:
             return []
 

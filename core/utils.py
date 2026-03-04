@@ -16,7 +16,7 @@ try:
     else:
         print(f"Gemini API Key Loaded: {GEMINI_API_KEY[:5]}...")
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash-latest")
+    model = genai.GenerativeModel("gemini-1.5-flash")
 except Exception as e:
     print(f"Gemini Configuration Error: {e}")
     model = None
@@ -26,10 +26,23 @@ def extract_text_from_file(file_path):
     text = ""
     try:
         if ext == ".pdf":
-            with open(file_path, "rb") as f:
-                reader = PyPDF2.PdfReader(f)
-                for page in reader.pages:
-                    text += page.extract_text() or ""
+            # Primary: PyPDF2
+            try:
+                with open(file_path, "rb") as f:
+                    reader = PyPDF2.PdfReader(f)
+                    for page in reader.pages:
+                        text += page.extract_text() or ""
+            except Exception as e:
+                print(f"PyPDF2 Failed: {e}. Trying pdfplumber...")
+                # Fallback: pdfplumber (often more robust for corrupted PDFs)
+                try:
+                    import pdfplumber
+                    with pdfplumber.open(file_path) as pdf:
+                        for page in pdf.pages:
+                            text += page.extract_text() or ""
+                except Exception as ef:
+                    print(f"pdfplumber Failed: {ef}")
+                    # Last ditch: PyMuPDF or similar could go here
         elif ext == ".docx":
             doc = docx.Document(file_path)
             for para in doc.paragraphs:
@@ -39,8 +52,9 @@ def extract_text_from_file(file_path):
                 text = f.read()
     except Exception as e:
         print(f"File Extraction Error: {e}")
-        text = "Unreadable file content"
-    return text
+        text = "Unreadable file content. Potential decoding issue or file corruption."
+    
+    return text.strip() if text else "No text could be extracted from this file."
 
 def detect_language(text):
     try:
@@ -50,21 +64,30 @@ def detect_language(text):
 
 def extract_json(response_text):
     """Robustly extract JSON from a string that might contain markdown or extra text."""
-    try:
-        # Try to find the first '{' or '[' and the last '}' or ']'
-        start_idx = response_text.find('{')
-        list_start_idx = response_text.find('[')
+    if not response_text:
+        return None
         
-        if list_start_idx != -1 and (start_idx == -1 or list_start_idx < start_idx):
-            start_idx = list_start_idx
-            end_idx = response_text.rfind(']')
-        else:
-            end_idx = response_text.rfind('}')
-            
-        if start_idx != -1 and end_idx != -1:
-            json_str = response_text[start_idx:end_idx + 1]
-            return json.loads(json_str)
-        return json.loads(response_text) # Fallback
+    try:
+        # 1. Direct attempt
+        return json.loads(response_text)
+    except:
+        pass
+
+    try:
+        # 2. Look for blocks [ ... ] or { ... }
+        start_list = response_text.find('[')
+        start_obj = response_text.find('{')
+        
+        if start_list != -1 and (start_obj == -1 or start_list < start_obj):
+            end_list = response_text.rfind(']')
+            if end_list != -1:
+                return json.loads(response_text[start_list:end_list+1])
+        elif start_obj != -1:
+            end_obj = response_text.rfind('}')
+            if end_obj != -1:
+                return json.loads(response_text[start_obj:end_obj+1])
+                
+        return None
     except Exception as e:
         print(f"JSON extraction failed: {e}")
         return None
@@ -87,7 +110,9 @@ def parse_resume_ai(text):
             raise Exception("Model not initialized")
         response = model.generate_content(prompt)
         data = extract_json(response.text)
-        return data if data else {"skills": "Python, Django, SQL", "projects": "E-commerce Website", "experience": "Junior Dev", "language": "en"}
+        if data and isinstance(data, dict) and "skills" in data:
+            return data
+        raise Exception("Invalid or empty data returned by AI")
     except Exception as e:
         print(f"AI Parsing Fallback (Local Scanner): {e}")
         # Dynamic Local Extraction
@@ -140,13 +165,25 @@ def evaluate_match_ai(candidate_data, job_requirements):
             "reasoning": f"Analyzed resume content. Matches found for: {', '.join(matches[:3])}. (Using optimized local analyzer)."
         }
 
-def generate_questions_ai(candidate_data, job_title, language="en"):
+def generate_questions_ai(candidate_data, job_title, job_requirements, language="en"):
+    # Ensure skills and projects are not empty or generic
+    candidate_skills = candidate_data.get('skills', 'General knowledge')
+    candidate_projects = candidate_data.get('projects', 'General projects')
+
     prompt = f"""
     Generate 5 technical multiple-choice questions for a {job_title} role.
-    Target the questions based on these skills/projects: {candidate_data.get('skills')} {candidate_data.get('projects')}
-    The language of the questions must be: {language}
+    You MUST completely avoid generic programming questions.
+    Target the questions specifically and directly on the INTERSECTION of the Candidate's skills/projects and the Job Requirements.
+    Job Requirements: {job_requirements}
+    Candidate Skills: {candidate_skills}
+    Candidate Projects: {candidate_projects}
     
-    Format: JSON list of objects:
+    CRITICAL: 
+    1. Each of the 5 questions must cover a DIFFERENT concept relevant to BOTH the candidate's skills AND the job requirements (if they overlap).
+    2. Make the questions highly specific (e.g., specific framework features, database specific commands).
+    3. The language of the questions must be: {language}.
+    
+    Return exactly a JSON list of objects (do not wrap it in any other object or text):
     [
       {{
         "text": "Question text...",
@@ -160,15 +197,49 @@ def generate_questions_ai(candidate_data, job_title, language="en"):
             raise Exception("Model not initialized")
         response = model.generate_content(prompt)
         data = extract_json(response.text)
-        if not data: raise Exception("No JSON returned")
+        
+        # Unpack from dict if AI wrapped it
+        if isinstance(data, dict):
+            for key, val in data.items():
+                if isinstance(val, list):
+                    data = val
+                    break
+                    
+        # Validating structure
+        if not isinstance(data, list):
+            raise Exception(f"AI returned {type(data)} instead of list")
+            
+        # Ensure each question has a list of options
+        for q in data:
+            if isinstance(q.get('options'), dict):
+                # Convert {"A": "text", ...} to ["A) text", ...]
+                q['options'] = [f"{k}) {v}" for k, v in q['options'].items()]
+                
         return data
     except Exception as e:
         print(f"Question Generation Fallback: {e}")
-        return [
-            {"text": "Which of the following is used to manage database migrations in Django?", "options": ["A) migrate", "B) pull", "C) build", "D) setup"], "answer": "A"},
-            {"text": "What is the correct way to handle a POST request in a Django view?", "options": ["A) if request.method == 'POST':", "B) if request.is_post:", "C) if method == 'POST':", "D) if POST:"], "answer": "A"},
-            {"text": "What does 'PEP 8' refer to in Python?", "options": ["A) A library", "B) Style guide", "C) Version number", "D) Debugger"], "answer": "B"},
-            {"text": "Which tag is used in HTML5 to embed a video?", "options": ["A) <media>", "B) <embed>", "C) <video>", "D) <movie>"], "answer": "C"},
-            {"text": "In CSS, which property is used to change the text color?", "options": ["A) text-color", "B) color", "C) font-color", "D) style-color"], "answer": "B"}
-        ]
+        
+        skill_list_candidate = [s.strip() for s in candidate_skills.split(',') if s.strip() and len(s) > 1]
+        skill_list_job = [s.strip() for s in str(job_requirements).split(',') if s.strip() and len(s) > 1]
+        
+        combined_skills = list(set(skill_list_candidate + skill_list_job))
+        
+        if not combined_skills or combined_skills == ['General knowledge']:
+            combined_skills = ["General Programming", "Data Structures", "Web Development", "Databases", "System Design"]
+        
+        fallback_questions = []
+        for i in range(5):
+            skill = combined_skills[i % len(combined_skills)]
+            fallback_questions.append({
+                "text": f"In the context of the requested {skill} skills for the {job_title} role, what is typically considered a best practice?",
+                "options": [
+                    "A) Ignoring errors and proceeding.",
+                    f"B) Utilizing standard {skill} patterns and writing structured code.",
+                    "C) Hardcoding credentials for faster access.",
+                    "D) Avoiding documentation to save time."
+                ],
+                "answer": f"B) Utilizing standard {skill} patterns and writing structured code."
+            })
+        
+        return fallback_questions
 

@@ -51,14 +51,27 @@ def apply_job(request, job_id):
             
             # 5. Generate Test Questions
             try:
-                questions_data = generate_questions_ai(parsed_data, job.title, candidate.language)
-                for q in questions_data:
-                    question = Question.objects.create(
-                        application=application,
-                        text=q.get('text'),
-                        correct_answer=q.get('answer')
-                    )
-                    question.set_options(q.get('options', []))
+                questions_data = generate_questions_ai(parsed_data, job.title, job.required_skills, candidate.language)
+                if isinstance(questions_data, list):
+                    for q in questions_data:
+                        if not isinstance(q, dict): continue
+                        
+                        text = q.get('text')
+                        ans = str(q.get('answer', 'A')).strip()
+                        # Take only the first character if it looks like "A) ..."
+                        if len(ans) > 1 and ans[1] in [')', '.', ':']:
+                            ans = ans[0]
+                        elif len(ans) > 1:
+                             # Just take first char anyway for consistency if it's longer
+                             ans = ans[0]
+
+                        if text:
+                            question = Question.objects.create(
+                                application=application,
+                                text=text,
+                                correct_answer=ans.upper()
+                            )
+                            question.set_options(q.get('options', []))
             except Exception as e:
                 print(f"Test Generation Failed: {e}")
         else:

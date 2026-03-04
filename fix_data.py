@@ -8,17 +8,22 @@ django.setup()
 from core.models import Application, Question
 
 def fix_questions():
-    # Fix all questions that have empty options_json
-    questions = Question.objects.filter(options_json='')
-    print(f"DEBUG: Found {questions.count()} questions with empty options.")
+    # Fix all questions that have empty or broken options_json
+    questions = Question.objects.all()
+    print(f"DEBUG: Scanning {questions.count()} total questions.")
     
-    # Generic fallback options
+    fixed_count = 0
     demo_options = ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"]
     
     for q in questions:
-        q.options_json = json.dumps(demo_options)
-        q.save()
-        print(f"DEBUG: Fixed Question ID {q.id}")
+        current_options = q.get_options()
+        if not current_options or not isinstance(current_options, list):
+            q.options_json = json.dumps(demo_options)
+            q.save()
+            print(f"DEBUG: Fixed Question ID {q.id} (was malformed or empty)")
+            fixed_count += 1
+            
+    print(f"DEBUG: Done! Fixed {fixed_count} questions.")
 
 if __name__ == '__main__':
     fix_questions()
